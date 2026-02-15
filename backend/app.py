@@ -71,6 +71,8 @@ def sensor_relay():
     return jsonify({"status": "relayed"}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    # Koyeb and other clouds use PORT env var. Default to 8000 for standard cloud health checks.
+    port = int(os.environ.get('PORT', 8000))
     print(f"Server starting on port {port}...")
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    # allow_unsafe_werkzeug=True is required for SocketIO in production threading mode without eventlet
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
