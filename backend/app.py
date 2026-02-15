@@ -15,8 +15,9 @@ REDIS_TOKEN = os.getenv('REDIS_REST_TOKEN', 'AeGQAAIncDJmZTZjODc4YmYwZjU0MmJiODg
 CHANNEL_NAME = 'dht-stream'
 
 app = Flask(__name__)
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# Allow CORS for all routes, including the Vercel domain specifically
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=True, engineio_logger=True)
 
 # Initialize Upstash Redis REST client
 redis_client = Redis(url=REDIS_URL, token=REDIS_TOKEN)
