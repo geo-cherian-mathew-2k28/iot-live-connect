@@ -7,10 +7,9 @@ import threading
 import time
 import os
 
-# Configuration
-# Use the REST URL and Token provided by Upstash
-REDIS_URL = os.getenv('REDIS_REST_URL', 'https://quality-mosquito-57744.upstash.io')
-REDIS_TOKEN = os.getenv('REDIS_REST_TOKEN', 'AeGQAAIncDJmZTZjODc4YmYwZjU0MmJiODg3Y2IxMzM3YWUyYWYxNHAyNTc3NDQ')
+# Configuration: Supports both custom and Upstash-provided env var names
+REDIS_URL = os.getenv('REDIS_REST_URL') or os.getenv('UPSTASH_REDIS_REST_URL') or 'https://quality-mosquito-57744.upstash.io'
+REDIS_TOKEN = os.getenv('REDIS_REST_TOKEN') or os.getenv('UPSTASH_REDIS_REST_TOKEN') or 'AeGQAAIncDJmZTZjODc4YmYwZjU0MmJiODg3Y2IxMzM3YWUyYWYxNHAyNTc3NDQ'
 
 CHANNEL_NAME = 'dht-stream'
 
