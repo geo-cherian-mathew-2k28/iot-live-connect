@@ -32,9 +32,13 @@ def sensor_data():
         return jsonify({"error": "No data"}), 400
     
     try:
-        # Publish using REST - this is extremely reliable for cloud deployment
+        # 1. Publish to Redis (Upstash)
         redis_client.publish(CHANNEL_NAME, json.dumps(data))
-        print(f"Received from sensor: {data}")
+        
+        # 2. Broadcast to Dashboard (Real-time relay)
+        socketio.emit('sensor_data', data)
+        
+        print(f"Relayed from sensor: {data}")
         return jsonify({"status": "success"}), 200
     except Exception as e:
         print(f"Upstash Error: {e}")

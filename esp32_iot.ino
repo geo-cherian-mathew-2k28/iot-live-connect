@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include "DHT.h"
 
@@ -17,64 +18,53 @@ void setup() {
   Serial.begin(115200);
   dht.begin();
 
-  // Connect to WiFi
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("\nWiFi connected");
 }
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
+    WiFiClientSecure client;
+    client.setInsecure(); // Important for Cloud deployment certificates
+    
     HTTPClient http;
+    http.setTimeout(10000); // Increase timeout for cloud response
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
 
     if (isnan(h) || isnan(t)) {
       Serial.println("Failed to read from DHT sensor!");
-      delay(2000);
-      return;
-    }
-
-    // Create JSON document
-    StaticJsonDocument<200> doc;
-    doc["temperature"] = t;
-    doc["humidity"] = h;
-
-    String jsonString;
-    serializeJson(doc, jsonString);
-
-    Serial.print("Sending data: ");
-    Serial.println(jsonString);
-
-    // Start HTTP POST
-    http.begin(serverName);
-    http.addHeader("Content-Type", "application/json");
-
-    int httpResponseCode = http.POST(jsonString);
-
-    if (httpResponseCode > 0) {
-      Serial.print("HTTP Response code: ");
-      Serial.println(httpResponseCode);
-      String payload = http.getString();
-      Serial.println(payload);
     } else {
-      Serial.print("Error code: ");
-      Serial.println(httpResponseCode);
+      StaticJsonDocument<200> doc;
+      doc["temperature"] = t;
+      doc["humidity"] = h;
+
+      String jsonString;
+      serializeJson(doc, jsonString);
+
+      Serial.print("Sending: ");
+      Serial.println(jsonString);
+
+      http.begin(client, serverName);
+      http.addHeader("Content-Type", "application/json");
+
+      int httpResponseCode = http.POST(jsonString);
+
+      if (httpResponseCode > 0) {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+      } else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
     }
-
-    http.end();
-  } else {
-    Serial.println("WiFi Disconnected");
   }
-
-  // Wait 5 seconds
   delay(5000);
 }
