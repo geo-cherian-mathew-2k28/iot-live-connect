@@ -22,10 +22,14 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logge
 # Initialize Upstash Redis REST client
 redis_client = Redis(url=REDIS_URL, token=REDIS_TOKEN)
 
+@app.route('/')
+def home():
+    return "IoT Backend is Online - Send POST to /sensor", 200
+
 @app.route('/sensor', methods=['POST', 'GET'])
 def sensor_data():
     if request.method == 'GET':
-        return "Backend is running!", 200
+        return "Sensor endpoint is ready. Send POST with JSON data.", 200
         
     data = request.json
     if not data:
