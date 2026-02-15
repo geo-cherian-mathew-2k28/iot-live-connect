@@ -184,10 +184,7 @@
     </div>
 
     <script>
-        // For deployment: Change this to your Koyeb URL
-        // const socket = io("https://your-app.koyeb.app");
-        // For local testing, it uses the current origin
-        const socket = io(window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : ""));
+        const socket = io("https://atomic-maryjo-cropstack-2280857f.koyeb.app");
 
         const tempEl = document.getElementById('temp-val');
         const humEl = document.getElementById('hum-val');

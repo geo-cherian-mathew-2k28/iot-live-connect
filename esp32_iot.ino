@@ -6,7 +6,7 @@
 // --- CONFIGURATION ---
 const char* ssid = "Mullananickal KvFi";
 const char* password = "geo@6756";
-const char* serverName = "https://guide-ireland-mic-divine.trycloudflare.com";
+const char* serverName = "https://atomic-maryjo-cropstack-2280857f.koyeb.app/sensor";
 
 #define DHTPIN 4
 #define DHTTYPE DHT11
