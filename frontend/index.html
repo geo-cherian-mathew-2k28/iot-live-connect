@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Real-Time Dashboard</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --accent-temp: #f43f5e;
+            --accent-hum: #0ea5e9;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        header p {
+            color: var(--text-sub);
+            font-size: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+        }
+
+        .card.temp::before { background-color: var(--accent-temp); }
+        .card.hum::before { background-color: var(--accent-hum); }
+
+        .card-label {
+            font-size: 0.875rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .card-unit {
+            font-size: 1.25rem;
+            color: var(--text-sub);
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            height: 400px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            margin-right: 6px;
+        }
+
+        .connection-status {
+            font-size: 0.875rem;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>IoT Monitoring</h1>
+            <p>Real-time environment tracking via Kafka</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="card temp">
+                <div class="card-label">Temperature</div>
+                <div class="card-value">
+                    <span id="temp-val">--</span>
+                    <span class="card-unit">°C</span>
+                </div>
+            </div>
+            <div class="card hum">
+                <div class="card-label">Humidity</div>
+                <div class="card-value">
+                    <span id="hum-val">--</span>
+                    <span class="card-unit">%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="liveChart"></canvas>
+        </div>
+
+        <div class="connection-status">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Connecting to WebSocket...</span>
+        </div>
+    </div>
+
+    <script>
+        const socket = io("http://192.168.1.5:5000");
+        
+        const tempEl = document.getElementById('temp-val');
+        const humEl = document.getElementById('hum-val');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        data: [],
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        data: [],
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 500
+                }
+            }
+        });
+
+        socket.on('connect', () => {
+            statusText.innerText = "Live: Connected to Backend";
+            statusDot.style.backgroundColor = "#10b981";
+        });
+
+        socket.on('disconnect', () => {
+            statusText.innerText = "Disconnected";
+            statusDot.style.backgroundColor = "#ef4444";
+        });
+
+        socket.on('sensor_data', (data) => {
+            const temp = data.temperature;
+            const hum = data.humidity;
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Update Cards
+            tempEl.innerText = temp.toFixed(1);
+            humEl.innerText = hum.toFixed(1);
+
+            // Update Chart
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(temp);
+            chart.data.datasets[1].data.push(hum);
+
+            // Keep only last 20 points
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+            }
+
+            chart.update();
+        });
+    </script>
+</body>
+</html>
