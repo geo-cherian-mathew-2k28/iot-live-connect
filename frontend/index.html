@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -88,8 +89,13 @@
             height: 100%;
         }
 
-        .card.temp::before { background-color: var(--accent-temp); }
-        .card.hum::before { background-color: var(--accent-hum); }
+        .card.temp::before {
+            background-color: var(--accent-temp);
+        }
+
+        .card.hum::before {
+            background-color: var(--accent-hum);
+        }
 
         .card-label {
             font-size: 0.875rem;
@@ -141,6 +147,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -177,8 +184,11 @@
     </div>
 
     <script>
-        const socket = io("http://192.168.1.5:5000");
-        
+        // For deployment: Change this to your Koyeb URL
+        // const socket = io("https://your-app.koyeb.app");
+        // For local testing, it uses the current origin
+        const socket = io(window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : ""));
+
         const tempEl = document.getElementById('temp-val');
         const humEl = document.getElementById('hum-val');
         const statusText = document.getElementById('status-text');
@@ -272,4 +282,5 @@
         });
     </script>
 </body>
+
 </html>
