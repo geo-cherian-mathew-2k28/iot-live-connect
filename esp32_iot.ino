@@ -53,6 +53,7 @@ void loop() {
 
       http.begin(client, serverName);
       http.addHeader("Content-Type", "application/json");
+      http.addHeader("X-API-KEY", "iot_secure_key_2024_v1"); // Security Header
 
       int httpResponseCode = http.POST(jsonString);
 
