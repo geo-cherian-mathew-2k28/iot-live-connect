@@ -66,7 +66,7 @@ We use a service called **Koyeb** to host the cloud brain.
 
 ## 🔐 Security (The "Shield")
 I have built this project with a special "Secret Key" system. 
-*   Because your repository is public, I have hidden your real Wi-Fi passwords and Cloud keys.
+*   Because my repository is public, I have hidden my real Wi-Fi passwords and Cloud keys.
 *   **Never share your real keys!** Always use Environment Variables on Koyeb to keep your project safe from hackers.
 
 ---
