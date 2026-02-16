@@ -6,57 +6,56 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from upstash_redis import Redis
 import json
-import threading
-import time
 import os
 
-# Configuration: Supports both custom and Upstash-provided env var names
+# Configuration
 REDIS_URL = os.getenv('REDIS_REST_URL') or os.getenv('UPSTASH_REDIS_REST_URL') or 'https://quality-mosquito-57744.upstash.io'
 REDIS_TOKEN = os.getenv('REDIS_REST_TOKEN') or os.getenv('UPSTASH_REDIS_REST_TOKEN') or 'AeGQAAIncDJmZTZjODc4YmYwZjU0MmJiODg3Y2IxMzM3YWUyYWYxNHAyNTc3NDQ'
-# Define a Secret Key for Sensor Authentication
 SENSOR_API_KEY = "iot_secure_key_2024_v1"
 
-CHANNEL_NAME = 'dht-stream'
-
 app = Flask(__name__)
-
-# Security: Reverting to broad CORS for debugging and ensuring connectivity
+# Professional CORS: Allow Vercel and WebSocket Handshakes
 CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=True)
 
-# Initialize Upstash Redis REST client
+# Professional SocketIO: Optimized for Cloud Proxies (Koyeb/Cloudflare)
+socketio = SocketIO(
+    app, 
+    cors_allowed_origins="*", 
+    async_mode='eventlet',
+    engineio_logger=True,
+    logger=True,
+    always_connect=True,
+    ping_timeout=60,
+    ping_interval=25
+)
+
 redis_client = Redis(url=REDIS_URL, token=REDIS_TOKEN)
 
 @app.route('/')
-def home():
-    print("Home endpoint hit")
-    return "IoT Backend is Online - Debug Mode", 200
+def health_check():
+    return jsonify({"status": "healthy", "service": "IoT-Secure-Relay"}), 200
 
-@app.route('/sensor', methods=['POST', 'GET'])
+@app.route('/sensor', methods=['POST'])
 def sensor_data():
-    if request.method == 'GET':
-        return "Sensor endpoint active", 200
-    # 1. SECURITY CHECK: Validate Secret API Key
     api_key = request.headers.get('X-API-KEY')
     if api_key != SENSOR_API_KEY:
-        print("Unauthorized access attempt blocked.")
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
     if not data:
-        return jsonify({"error": "No data"}), 400
+        return jsonify({"error": "Bad Request"}), 400
     
     try:
-        # Publish to Redis and Broadcast to Dashboard
-        redis_client.publish(CHANNEL_NAME, json.dumps(data))
+        # Publish to Redis for Persistence
+        redis_client.publish('dht-stream', json.dumps(data))
+        # Real-time relay to Dashboard
         socketio.emit('sensor_data', data)
-        print(f"Relayed secure data: {data}")
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"Server Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Upstash Error: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
+    # When running locally or via python app.py
     port = int(os.environ.get('PORT', 8000))
-    print(f"Server starting on port {port}...")
-    socketio.run(app, host='0.0.0.0', port=port)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
