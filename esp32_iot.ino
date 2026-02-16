@@ -5,9 +5,10 @@
 #include "DHT.h"
 
 // --- CONFIGURATION ---
-const char* ssid = "Mullananickal KvFi";
-const char* password = "geo@6756";
-const char* serverName = "https://atomic-maryjo-cropstack-2280857f.koyeb.app/sensor";
+const char* ssid = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
+const char* serverName = "https://your-koyeb-app.koyeb.app/sensor";
+const char* myApiKey = "your_secret_key_here"; // Must match backend SENSOR_API_KEY
 
 #define DHTPIN 4
 #define DHTTYPE DHT11
@@ -24,6 +25,8 @@ void setup() {
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
+  }
   Serial.println("\nWiFi connected");
   
   client.setInsecure(); // Persistent setting
@@ -51,7 +54,7 @@ void loop() {
       // Re-using the http object with keep-alive
       http.begin(client, serverName);
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("X-API-KEY", "iot_secure_key_2024_v1");
+      http.addHeader("X-API-KEY", myApiKey);
       http.addHeader("Connection", "keep-alive"); // Professional keep-alive
 
       int httpResponseCode = http.POST(jsonString);
@@ -62,7 +65,6 @@ void loop() {
       } else {
         Serial.print("Connection/Timeout Error: ");
         Serial.println(http.errorToString(httpResponseCode).c_str());
-        // If timeout happens, the data might still have reached the server!
       }
       http.end(); // Clean up current request but keep hardware radio ready
     }
