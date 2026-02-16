@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-# Binding to port 8000 as configured in Koyeb dashboard
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8000", "app:app"]
+# Professional Koyeb Config: Bind to the dynamic PORT provided by the platform
+CMD gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
