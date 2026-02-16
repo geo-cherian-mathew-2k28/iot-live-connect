@@ -8,7 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-# Koyeb uses PORT env var, which we handle in app.py
-EXPOSE 5000
-
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8000", "app:app"]
+# Koyeb handles the port automatically via the PORT env var
+CMD sh -c "gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app"
