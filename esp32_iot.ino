@@ -13,6 +13,8 @@ const char* serverName = "https://atomic-maryjo-cropstack-2280857f.koyeb.app/sen
 #define DHTTYPE DHT11
 
 DHT dht(DHTPIN, DHTTYPE);
+WiFiClientSecure client; // Persistent client
+HTTPClient http;
 
 void setup() {
   Serial.begin(115200);
@@ -22,19 +24,14 @@ void setup() {
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
-  }
   Serial.println("\nWiFi connected");
+  
+  client.setInsecure(); // Persistent setting
+  http.setTimeout(10000); // 10-second timeout to prevent 'Read Timeout'
 }
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure(); // Important for Cloud deployment certificates
-    
-    HTTPClient http;
-    http.setTimeout(10000); // Increase timeout for cloud response
-
     float h = dht.readHumidity();
     float t = dht.readTemperature();
 
@@ -48,24 +45,30 @@ void loop() {
       String jsonString;
       serializeJson(doc, jsonString);
 
-      Serial.print("Sending: ");
+      Serial.print("Real-time Sending: ");
       Serial.println(jsonString);
 
+      // Re-using the http object with keep-alive
       http.begin(client, serverName);
       http.addHeader("Content-Type", "application/json");
-      http.addHeader("X-API-KEY", "iot_secure_key_2024_v1"); // Security Header
+      http.addHeader("X-API-KEY", "iot_secure_key_2024_v1");
+      http.addHeader("Connection", "keep-alive"); // Professional keep-alive
 
       int httpResponseCode = http.POST(jsonString);
 
       if (httpResponseCode > 0) {
-        Serial.print("HTTP Response code: ");
+        Serial.print("Server Received Data! Code: ");
         Serial.println(httpResponseCode);
       } else {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
+        Serial.print("Connection/Timeout Error: ");
+        Serial.println(http.errorToString(httpResponseCode).c_str());
+        // If timeout happens, the data might still have reached the server!
       }
-      http.end();
+      http.end(); // Clean up current request but keep hardware radio ready
     }
+  } else {
+    Serial.println("WiFi Disconnected! Reconnecting...");
+    WiFi.begin(ssid, password);
   }
-  delay(5000);
+  delay(3000); // 3-second sync for true real-time
 }
