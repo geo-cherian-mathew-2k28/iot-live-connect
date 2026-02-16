@@ -9,7 +9,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy everything
 COPY . .
 
+# Change working directory to the backend folder
+WORKDIR /app/backend
+
 ENV PYTHONUNBUFFERED=1
 
-# Command to run from the root, pointing to the app inside the backend folder
-CMD gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT backend.app:app
+# Run gunicorn from the backend directory
+CMD gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app

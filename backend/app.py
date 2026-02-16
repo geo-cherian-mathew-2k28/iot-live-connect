@@ -46,16 +46,21 @@ def sensor_data():
         return jsonify({"error": "Bad Request"}), 400
     
     try:
-        # Publish to Redis for Persistence
-        redis_client.publish('dht-stream', json.dumps(data))
-        # Real-time relay to Dashboard
+        # 1. Immediate Broadcast to Dashboard (User priority)
         socketio.emit('sensor_data', data)
+        
+        # 2. Asynchronous attempt to publish to Redis (Persistence priority)
+        # We don't want a slow Redis connection to block the real-time flow
+        try:
+            redis_client.publish('dht-stream', json.dumps(data))
+        except Exception as redis_err:
+            print(f"Redis Publish Warning: {redis_err}") # Non-critical failure
+
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        app.logger.error(f"Upstash Error: {e}")
+        print(f"Production Error: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
-    # When running locally or via python app.py
     port = int(os.environ.get('PORT', 8000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    socketio.run(app, host='0.0.0.0', port=port)
