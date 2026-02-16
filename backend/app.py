@@ -14,7 +14,8 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # Configuration: Securely loaded from Environment Variables
 REDIS_URL = os.getenv('REDIS_URL', 'https://quality-mosquito-57744.upstash.io')
 REDIS_TOKEN = os.getenv('REDIS_TOKEN')
-SENSOR_API_KEY = os.getenv('SENSOR_API_KEY', 'default_secure_key')
+# Set the default to match your existing ESP32 code
+SENSOR_API_KEY = os.getenv('SENSOR_API_KEY', 'iot_secure_key_2024_v1')
 
 socketio = SocketIO(
     app,
