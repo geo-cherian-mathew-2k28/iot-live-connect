@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -16,7 +19,7 @@ CHANNEL_NAME = 'dht-stream'
 app = Flask(__name__)
 # Allow CORS for all routes, including the Vercel domain specifically
 CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=True, engineio_logger=True)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=True)
 
 # Initialize Upstash Redis REST client
 redis_client = Redis(url=REDIS_URL, token=REDIS_TOKEN)
