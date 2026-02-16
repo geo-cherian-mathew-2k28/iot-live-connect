@@ -20,19 +20,22 @@ CHANNEL_NAME = 'dht-stream'
 
 app = Flask(__name__)
 
-# Security: Allow only your specific Vercel dashboard and local testing
-CORS(app, resources={r"/*": {"origins": ["https://io-t-live-connect.vercel.app", "http://localhost:3000"]}})
-socketio = SocketIO(app, cors_allowed_origins=["https://io-t-live-connect.vercel.app", "http://localhost:3000"], async_mode='eventlet')
+# Security: Reverting to broad CORS for debugging and ensuring connectivity
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=True)
 
 # Initialize Upstash Redis REST client
 redis_client = Redis(url=REDIS_URL, token=REDIS_TOKEN)
 
 @app.route('/')
 def home():
-    return "IoT Backend is Online - Secure Mode Active", 200
+    print("Home endpoint hit")
+    return "IoT Backend is Online - Debug Mode", 200
 
-@app.route('/sensor', methods=['POST'])
+@app.route('/sensor', methods=['POST', 'GET'])
 def sensor_data():
+    if request.method == 'GET':
+        return "Sensor endpoint active", 200
     # 1. SECURITY CHECK: Validate Secret API Key
     api_key = request.headers.get('X-API-KEY')
     if api_key != SENSOR_API_KEY:
